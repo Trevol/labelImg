@@ -10,7 +10,7 @@ except ImportError:
 #from PyQt4.QtOpenGL import *
 
 from libs.shape import Shape
-from libs.lib import distance
+from libs.utils import distance
 
 CURSOR_DEFAULT = Qt.ArrowCursor
 CURSOR_POINT = Qt.PointingHandCursor
@@ -42,7 +42,7 @@ class Canvas(QWidget):
         self.selectedShape = None  # save the selected shape here
         self.selectedShapeCopy = None
         self.drawingLineColor = QColor(0, 0, 255)
-        self.drawingRectColor = QColor(0, 0, 255) 
+        self.drawingRectColor = QColor(0, 0, 255)
         self.line = Shape(line_color=self.drawingLineColor)
         self.prevPoint = QPointF()
         self.offsets = QPointF(), QPointF()
@@ -61,6 +61,7 @@ class Canvas(QWidget):
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.WheelFocus)
         self.verified = False
+        self.drawSquare = False
 
     def setDrawingColor(self, qColor):
         self.drawingLineColor = qColor
@@ -126,7 +127,18 @@ class Canvas(QWidget):
                     color = self.current.line_color
                     self.overrideCursor(CURSOR_POINT)
                     self.current.highlightVertex(0, Shape.NEAR_VERTEX)
-                self.line[1] = pos
+
+                if self.drawSquare:
+                    initPos = self.current[0]
+                    minX = initPos.x()
+                    minY = initPos.y()
+                    min_size = min(abs(pos.x() - minX), abs(pos.y() - minY))
+                    directionX = -1 if pos.x() - minX < 0 else 1
+                    directionY = -1 if pos.y() - minY < 0 else 1
+                    self.line[1] = QPointF(minX + directionX * min_size, minY + directionY * min_size)
+                else:
+                    self.line[1] = pos
+
                 self.line.line_color = color
                 self.prevPoint = QPointF()
                 self.current.highlightClear()
@@ -314,13 +326,38 @@ class Canvas(QWidget):
         y2 = (rect.y() + rect.height()) - point.y()
         self.offsets = QPointF(x1, y1), QPointF(x2, y2)
 
+    def snapPointToCanvas(self, x, y):
+        """
+        Moves a point x,y to within the boundaries of the canvas.
+        :return: (x,y,snapped) where snapped is True if x or y were changed, False if not.
+        """
+        if x < 0 or x > self.pixmap.width() or y < 0 or y > self.pixmap.height():
+            x = max(x, 0)
+            y = max(y, 0)
+            x = min(x, self.pixmap.width())
+            y = min(y, self.pixmap.height())
+            return x, y, True
+
+        return x, y, False
+
     def boundedMoveVertex(self, pos):
         index, shape = self.hVertex, self.hShape
         point = shape[index]
         if self.outOfPixmap(pos):
             pos = self.intersectionPoint(point, pos)
 
-        shiftPos = pos - point
+        if self.drawSquare:
+            opposite_point_index = (index + 2) % 4
+            opposite_point = shape[opposite_point_index]
+
+            min_size = min(abs(pos.x() - opposite_point.x()), abs(pos.y() - opposite_point.y()))
+            directionX = -1 if pos.x() - opposite_point.x() < 0 else 1
+            directionY = -1 if pos.y() - opposite_point.y() < 0 else 1
+            shiftPos = QPointF(opposite_point.x() + directionX * min_size - point.x(),
+                               opposite_point.y() + directionY * min_size - point.y())
+        else:
+            shiftPos = pos - point
+
         shape.moveVertexBy(index, shiftPos)
 
         lindex = (index + 1) % 4
@@ -505,6 +542,10 @@ class Canvas(QWidget):
                 return QPointF(x3, min(max(0, y2), max(y3, y4)))
             else:  # y3 == y4
                 return QPointF(min(max(0, x2), max(x3, x4)), y3)
+
+        # Ensure the labels are within the bounds of the image. If not, fix them.
+        x, y, _ = self.snapPointToCanvas(x, y)
+
         return QPointF(x, y)
 
     def intersectingEdges(self, x1y1, x2y2, points):
@@ -621,7 +662,7 @@ class Canvas(QWidget):
         self.shapes[-1].label = text
         if line_color:
             self.shapes[-1].line_color = line_color
-        
+
         if fill_color:
             self.shapes[-1].fill_color = fill_color
 
@@ -678,3 +719,6 @@ class Canvas(QWidget):
         self.restoreCursor()
         self.pixmap = None
         self.update()
+
+    def setDrawingShapeToSquare(self, status):
+        self.drawSquare = status

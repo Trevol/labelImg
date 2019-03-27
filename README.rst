@@ -12,7 +12,7 @@ LabelImg is a graphical image annotation tool.
 It is written in Python and uses Qt for its graphical interface.
 
 Annotations are saved as XML files in PASCAL VOC format, the format used
-by `ImageNet <http://www.image-net.org/>`__.
+by `ImageNet <http://www.image-net.org/>`__.  Besdies, it also supports YOLO format
 
 .. image:: https://raw.githubusercontent.com/tzutalin/labelImg/master/demo/demo3.jpg
      :alt: Demo Image
@@ -28,7 +28,7 @@ Installation
 Download prebuilt binaries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `Windows & Linux <https://tzutalin.github.io/labelImg/>`__
+-  `Windows <https://github.com/tzutalin/labelImg/releases>`__
 
 -  macOS. Binaries for macOS are not yet available. Help would be appreciated. At present, it must be `built from source <#macos>`__.
 
@@ -57,7 +57,7 @@ Python 3 + Qt5
 .. code::
 
     sudo apt-get install pyqt5-dev-tools
-    sudo pip3 install lxml
+    sudo pip3 install -r requirements/requirements-linux-python3.txt
     make qt5py3
     python3 labelImg.py
     python3 labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
@@ -72,7 +72,7 @@ Python 2 + Qt4
     brew install libxml2
     make qt4py2
     python labelImg.py
-    python  labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
+    python labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 
 Python 3 + Qt5 (Works on macOS High Sierra)
 
@@ -81,17 +81,21 @@ Python 3 + Qt5 (Works on macOS High Sierra)
     brew install qt  # will install qt-5.x.x
     brew install libxml2
     make qt5py3
-    python labelImg.py
-    python  labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
+    python3 labelImg.py
+    python3 labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 
-**NEW** Python 3 Virtualenv + Binary  
+    As a side note, if mssing pyrcc5 or lxml, try
+    pip3 install pyqt5 lxml
+
+
+**NEW** Python 3 Virtualenv + Binary
 This avoids a lot of the QT / Python version issues,
 and gives you a nice .app file with a new SVG Icon
 in your /Applications folder. You can consider this script: build-tools/build-for-macos.sh
 
 .. code::
-    
-    
+
+
     brew install python3
     pip install pipenv
     pipenv --three
@@ -118,7 +122,7 @@ Open cmd and go to the `labelImg <#labelimg>`__ directory
     pyrcc4 -o resources.py resources.qrc
     python labelImg.py
     python labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
-    
+
 Windows + Anaconda
 ^^^^^^^
 
@@ -238,6 +242,16 @@ Hotkeys
 +------------+--------------------------------------------+
 | ↑→↓←       | Keyboard arrows to move selected rect box  |
 +------------+--------------------------------------------+
+
+**Verify Image:**
+
+When pressing space, the user can flag the image as verified, a green background will appear.
+This is used when creating a dataset automatically, the user can then through all the pictures and flag them instead of annotate them.
+
+**Difficult:**
+
+The difficult field being set to 1 indicates that the object has been annotated as "difficult", for example an object which is clearly visible but difficult to recognize without substantial use of context.
+According to your deep neural network implementation, you can include or exclude difficult objects during training. 
 
 How to contribute
 ~~~~~~~~~~~~~~~~~

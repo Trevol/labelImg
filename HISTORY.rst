@@ -2,6 +2,19 @@
 History
 =======
 
+1.8.1 (2018-12-02)
+------------------
+
+* Fix issues
+* Support zh-Tw strings
+
+
+1.8.0 (2018-10-21)
+------------------
+
+* Support drawing sqaure rect
+* Add item single click slot
+* Fix issues
 
 1.7.0 (2018-05-18)
 ------------------
