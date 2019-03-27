@@ -1,4 +1,3 @@
-
 try:
     from PyQt5.QtGui import *
     from PyQt5.QtCore import *
@@ -7,7 +6,7 @@ except ImportError:
     from PyQt4.QtGui import *
     from PyQt4.QtCore import *
 
-#from PyQt4.QtOpenGL import *
+# from PyQt4.QtOpenGL import *
 
 from libs.shape import Shape
 from libs.utils import distance
@@ -17,6 +16,7 @@ CURSOR_POINT = Qt.PointingHandCursor
 CURSOR_DRAW = Qt.CrossCursor
 CURSOR_MOVE = Qt.ClosedHandCursor
 CURSOR_GRAB = Qt.OpenHandCursor
+
 
 # class Canvas(QGLWidget):
 
@@ -226,8 +226,8 @@ class Canvas(QWidget):
         if ev.button() == Qt.RightButton:
             menu = self.menus[bool(self.selectedShapeCopy)]
             self.restoreCursor()
-            if not menu.exec_(self.mapToGlobal(ev.pos()))\
-               and self.selectedShapeCopy:
+            if not menu.exec_(self.mapToGlobal(ev.pos())) \
+                    and self.selectedShapeCopy:
                 # Cancel the move by deleting the shadow copy.
                 self.selectedShapeCopy = None
                 self.repaint()
@@ -244,8 +244,8 @@ class Canvas(QWidget):
     def endMove(self, copy=False):
         assert self.selectedShape and self.selectedShapeCopy
         shape = self.selectedShapeCopy
-        #del shape.fill_color
-        #del shape.line_color
+        # del shape.fill_color
+        # del shape.line_color
         if copy:
             self.shapes.append(shape)
             self.selectedShape.selected = False
@@ -340,8 +340,9 @@ class Canvas(QWidget):
 
         return x, y, False
 
-    def boundedMoveVertex(self, pos):
-        index, shape = self.hVertex, self.hShape
+    def boundedMoveVertex(self, pos, vertex=None, shape=None):
+        index, shape = (self.hVertex if vertex is None else vertex,
+                        self.hShape if shape is None else shape)
         point = shape[index]
         if self.outOfPixmap(pos):
             pos = self.intersectionPoint(point, pos)
@@ -387,7 +388,7 @@ class Canvas(QWidget):
         # relative to the shape, but also results in making it
         # a bit "shaky" when nearing the border and allows it to
         # go outside of the shape's area for some reason. XXX
-        #self.calculateOffsets(self.selectedShape, pos)
+        # self.calculateOffsets(self.selectedShape, pos)
         dp = pos - self.prevPoint
         if dp:
             shape.moveBy(dp)
@@ -517,8 +518,8 @@ class Canvas(QWidget):
         self.update()
 
     def closeEnough(self, p1, p2):
-        #d = distance(p1 - p2)
-        #m = (p1-p2).manhattanLength()
+        # d = distance(p1 - p2)
+        # m = (p1-p2).manhattanLength()
         # print "d %.2f, m %d, %.2f" % (d, m, d - m)
         return distance(p1 - p2) < self.epsilon
 
@@ -616,13 +617,34 @@ class Canvas(QWidget):
         elif key == Qt.Key_Return and self.canCloseShape():
             self.finalise()
         elif key == Qt.Key_Left and self.selectedShape:
-            self.moveOnePixel('Left')
+            if ev.modifiers() == Qt.AltModifier:
+                # TODO: highlight moving (and clear state on releaseKeyEvent)
+                self.moveVertexByOffset('Left')
+            elif ev.modifiers() == Qt.ControlModifier:
+                self.moveByPixels('Left', 7)
+            else:
+                self.moveOnePixel('Left')
         elif key == Qt.Key_Right and self.selectedShape:
-            self.moveOnePixel('Right')
+            if ev.modifiers() == Qt.AltModifier:
+                self.moveVertexByOffset('Right')
+            elif ev.modifiers() == Qt.ControlModifier:
+                self.moveByPixels('Right', 7)
+            else:
+                self.moveOnePixel('Right')
         elif key == Qt.Key_Up and self.selectedShape:
-            self.moveOnePixel('Up')
+            if ev.modifiers() == Qt.AltModifier:
+                self.moveVertexByOffset('Up')
+            elif ev.modifiers() == Qt.ControlModifier:
+                self.moveByPixels('Up', 7)
+            else:
+                self.moveOnePixel('Up')
         elif key == Qt.Key_Down and self.selectedShape:
-            self.moveOnePixel('Down')
+            if ev.modifiers() == Qt.AltModifier:
+                self.moveVertexByOffset('Down')
+            elif ev.modifiers() == Qt.ControlModifier:
+                self.moveByPixels('Down', 7)
+            else:
+                self.moveOnePixel('Down')
 
     def moveOnePixel(self, direction):
         # print(self.selectedShape.points)
@@ -653,11 +675,51 @@ class Canvas(QWidget):
         self.shapeMoved.emit()
         self.repaint()
 
+    def moveByPixels(self, direction, offset):
+        if direction == 'Left':
+            offset = QPointF(-offset, 0)
+        elif direction == 'Right':
+            offset = QPointF(offset, 0)
+        elif direction == 'Up':
+            offset = QPointF(0, -offset)
+        elif direction == 'Down':
+            offset = QPointF(0, offset)
+        else:
+            return
+        if self.moveOutOfBound(offset):
+            return
+
+        self.selectedShape.moveBy(offset)
+        self.shapeMoved.emit()
+        self.repaint()
+
+    def moveVertexByOffset(self, direction, index=2, offset=1):
+        # TODO: impl resizing by moving vertex (default bottom right vertex)
+        shape = self.selectedShape
+        if not shape:
+            return
+        if direction == 'Left':
+            step = QPointF(-1.0, 0.0)
+        elif direction == 'Right':
+            step = QPointF(1.0, 0.0)
+        elif direction == 'Up':
+            step = QPointF(0.0, -1.0)
+        elif direction == 'Down':
+            step = QPointF(0.0, 1.0)
+        else:
+            return
+        point = shape[index]
+        newPos = point + step
+        self.boundedMoveVertex(newPos, index, shape)
+
+        self.shapeMoved.emit()
+        self.repaint()
+
     def moveOutOfBound(self, step):
-        points = [p1+p2 for p1, p2 in zip(self.selectedShape.points, [step]*4)]
+        points = [p1 + p2 for p1, p2 in zip(self.selectedShape.points, [step] * 4)]
         return True in map(self.outOfPixmap, points)
 
-    def setLastLabel(self, text, line_color  = None, fill_color = None):
+    def setLastLabel(self, text, line_color=None, fill_color=None):
         assert text
         self.shapes[-1].label = text
         if line_color:
