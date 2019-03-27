@@ -607,6 +607,12 @@ class Canvas(QWidget):
             h_delta and self.scrollRequest.emit(h_delta, Qt.Horizontal)
         ev.accept()
 
+    def keyReleaseEvent(self, ev):
+        if self.hShape:
+            self.hShape.highlightClear()
+            self.hVertex, self.hShape = None, None
+            self.update()
+
     def keyPressEvent(self, ev):
         key = ev.key()
         if key == Qt.Key_Escape and self.current:
@@ -618,7 +624,6 @@ class Canvas(QWidget):
             self.finalise()
         elif key == Qt.Key_Left and self.selectedShape:
             if ev.modifiers() == Qt.AltModifier:
-                # TODO: highlight moving (and clear state on releaseKeyEvent)
                 self.moveVertexByOffset('Left')
             elif ev.modifiers() == Qt.ControlModifier:
                 self.moveByPixels('Left', 7)
@@ -693,27 +698,30 @@ class Canvas(QWidget):
         self.shapeMoved.emit()
         self.repaint()
 
-    def moveVertexByOffset(self, direction, index=2, offset=1):
-        # TODO: impl resizing by moving vertex (default bottom right vertex)
+    def moveVertexByOffset(self, direction, index=2, offset=1.0):
         shape = self.selectedShape
         if not shape:
             return
         if direction == 'Left':
-            step = QPointF(-1.0, 0.0)
+            step = QPointF(-offset, 0.0)
         elif direction == 'Right':
-            step = QPointF(1.0, 0.0)
+            step = QPointF(offset, 0.0)
         elif direction == 'Up':
-            step = QPointF(0.0, -1.0)
+            step = QPointF(0.0, -offset)
         elif direction == 'Down':
-            step = QPointF(0.0, 1.0)
+            step = QPointF(0.0, offset)
         else:
             return
+
+        self.hVertex, self.hShape = index, shape
+        shape.highlightVertex(index, shape.MOVE_VERTEX)
+
         point = shape[index]
         newPos = point + step
         self.boundedMoveVertex(newPos, index, shape)
 
         self.shapeMoved.emit()
-        self.repaint()
+        self.update()
 
     def moveOutOfBound(self, step):
         points = [p1 + p2 for p1, p2 in zip(self.selectedShape.points, [step] * 4)]
