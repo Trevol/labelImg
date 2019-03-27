@@ -623,28 +623,28 @@ class Canvas(QWidget):
         elif key == Qt.Key_Return and self.canCloseShape():
             self.finalise()
         elif key == Qt.Key_Left and self.selectedShape:
-            if ev.modifiers() == Qt.AltModifier:
+            if ev.modifiers() == Qt.ShiftModifier:
                 self.moveVertexByOffset('Left')
             elif ev.modifiers() == Qt.ControlModifier:
                 self.moveByPixels('Left', 7)
             else:
                 self.moveOnePixel('Left')
         elif key == Qt.Key_Right and self.selectedShape:
-            if ev.modifiers() == Qt.AltModifier:
+            if ev.modifiers() == Qt.ShiftModifier:
                 self.moveVertexByOffset('Right')
             elif ev.modifiers() == Qt.ControlModifier:
                 self.moveByPixels('Right', 7)
             else:
                 self.moveOnePixel('Right')
         elif key == Qt.Key_Up and self.selectedShape:
-            if ev.modifiers() == Qt.AltModifier:
+            if ev.modifiers() == Qt.ShiftModifier:
                 self.moveVertexByOffset('Up')
             elif ev.modifiers() == Qt.ControlModifier:
                 self.moveByPixels('Up', 7)
             else:
                 self.moveOnePixel('Up')
         elif key == Qt.Key_Down and self.selectedShape:
-            if ev.modifiers() == Qt.AltModifier:
+            if ev.modifiers() == Qt.ShiftModifier:
                 self.moveVertexByOffset('Down')
             elif ev.modifiers() == Qt.ControlModifier:
                 self.moveByPixels('Down', 7)
