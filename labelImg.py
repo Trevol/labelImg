@@ -26,8 +26,8 @@ except ImportError:
     from PyQt4.QtGui import *
     from PyQt4.QtCore import *
 
-import resources
-# Add internal libs
+from combobox import ComboBox
+from libs.resources import *
 from libs.constants import *
 from libs.utils import *
 from libs.settings import Settings
@@ -44,7 +44,6 @@ from libs.pascal_voc_io import XML_EXT
 from libs.yolo_io import YoloReader
 from libs.yolo_io import TXT_EXT
 from libs.ustr import ustr
-from libs.version import __version__
 from libs.hashableQListWidgetItem import HashableQListWidgetItem
 
 __appname__ = 'labelImg'
@@ -138,6 +137,10 @@ class MainWindow(QMainWindow, WindowMixin):
         listLayout.addWidget(self.diffcButton)
         listLayout.addWidget(useDefaultLabelContainer)
 
+        # Create and add combobox for showing unique labels in group 
+        self.comboBox = ComboBox(self)
+        listLayout.addWidget(self.comboBox)
+
         # Create and add a widget for showing current label items
         self.labelList = QListWidget()
         labelListContainer = QWidget()
@@ -148,6 +151,8 @@ class MainWindow(QMainWindow, WindowMixin):
         # Connect to itemChanged to detect checkbox changes.
         self.labelList.itemChanged.connect(self.labelItemChanged)
         listLayout.addWidget(self.labelList)
+
+        
 
         self.dock = QDockWidget(getStr('boxLabelText'), self)
         self.dock.setObjectName(getStr('labels'))
@@ -310,7 +315,7 @@ class MainWindow(QMainWindow, WindowMixin):
         labels.setText(getStr('showHide'))
         labels.setShortcut('Ctrl+Shift+L')
 
-        # Lavel list context menu.
+        # Label list context menu.
         labelMenu = QMenu()
         addActions(labelMenu, (edit, delete))
         self.labelList.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -476,7 +481,7 @@ class MainWindow(QMainWindow, WindowMixin):
 
         # Open Dir if deafult file
         if self.filePath and os.path.isdir(self.filePath):
-            self.openDirDialog(dirpath=self.filePath)
+            self.openDirDialog(dirpath=self.filePath, silent=True)
 
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Control:
@@ -575,6 +580,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.labelFile = None
         self.canvas.resetState()
         self.labelCoordinates.clear()
+        self.comboBox.cb.clear()
 
     def currentItem(self):
         items = self.labelList.selectedItems()
@@ -603,7 +609,7 @@ class MainWindow(QMainWindow, WindowMixin):
         elif osName == 'Linux':
             return ['xdg-open']
         elif osName == 'Darwin':
-            return ['open', '-a', 'Safari']
+            return ['open']
 
     ## Callbacks ##
     def showTutorialDialog(self):
@@ -672,6 +678,7 @@ class MainWindow(QMainWindow, WindowMixin):
             item.setText(text)
             item.setBackground(generateColorByText(text))
             self.setDirty()
+            self.updateComboBox()
 
     # Tzutalin 20160906 : Add file list and dock to move faster
     def fileitemDoubleClicked(self, item=None):
@@ -735,6 +742,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.labelList.addItem(item)
         for action in self.actions.onShapesPresent:
             action.setEnabled(True)
+        self.updateComboBox()
 
     def remLabel(self, shape):
         if shape is None:
@@ -744,6 +752,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.labelList.takeItem(self.labelList.row(item))
         del self.shapesToItems[shape]
         del self.itemsToShapes[item]
+        self.updateComboBox()
 
     def loadLabels(self, shapes):
         s = []
@@ -772,8 +781,19 @@ class MainWindow(QMainWindow, WindowMixin):
                 shape.fill_color = generateColorByText(label)
 
             self.addLabel(shape)
-
+        self.updateComboBox()
         self.canvas.loadShapes(s)
+
+    def updateComboBox(self):
+        # Get the unique labels and add them to the Combobox.
+        itemsTextList = [str(self.labelList.item(i).text()) for i in range(self.labelList.count())]
+            
+        uniqueTextList = list(set(itemsTextList))
+        # Add a null row for showing all the labels
+        uniqueTextList.append("")
+        uniqueTextList.sort()
+
+        self.comboBox.update_items(uniqueTextList)
 
     def saveLabels(self, annotationFilePath):
         annotationFilePath = ustr(annotationFilePath)
@@ -815,6 +835,16 @@ class MainWindow(QMainWindow, WindowMixin):
         self.addLabel(self.canvas.copySelectedShape())
         # fix copy and delete
         self.shapeSelectionChanged(True)
+    
+    def comboSelectionChanged(self, index):
+        text = self.comboBox.cb.itemText(index)
+        for i in range(self.labelList.count()):
+            if text == "":
+                self.labelList.item(i).setCheckState(2) 
+            elif text != self.labelList.item(i).text():
+                self.labelList.item(i).setCheckState(0)
+            else:
+                self.labelList.item(i).setCheckState(2)
 
     def labelSelectionChanged(self):
         item = self.currentItem()
@@ -967,13 +997,19 @@ class MainWindow(QMainWindow, WindowMixin):
         # Make sure that filePath is a regular python string, rather than QString
         filePath = ustr(filePath)
 
+        # Fix bug: An  index error after select a directory when open a new file.
         unicodeFilePath = ustr(filePath)
+        unicodeFilePath = os.path.abspath(unicodeFilePath)
         # Tzutalin 20160906 : Add file list and dock to move faster
         # Highlight the file item
         if unicodeFilePath and self.fileListWidget.count() > 0:
-            index = self.mImgList.index(unicodeFilePath)
-            fileWidgetItem = self.fileListWidget.item(index)
-            fileWidgetItem.setSelected(True)
+            if unicodeFilePath in self.mImgList:
+                index = self.mImgList.index(unicodeFilePath)
+                fileWidgetItem = self.fileListWidget.item(index)
+                fileWidgetItem.setSelected(True)
+            else:
+                self.fileListWidget.clear()
+                self.mImgList.clear()
 
         if unicodeFilePath and os.path.exists(unicodeFilePath):
             if LabelFile.isLabelFile(unicodeFilePath):
@@ -1166,7 +1202,7 @@ class MainWindow(QMainWindow, WindowMixin):
                     filename = filename[0]
             self.loadPascalXMLByFilename(filename)
 
-    def openDirDialog(self, _value=False, dirpath=None):
+    def openDirDialog(self, _value=False, dirpath=None, silent=False):
         if not self.mayContinue():
             return
 
@@ -1175,10 +1211,13 @@ class MainWindow(QMainWindow, WindowMixin):
             defaultOpenDirPath = self.lastOpenDir
         else:
             defaultOpenDirPath = os.path.dirname(self.filePath) if self.filePath else '.'
+        if silent!=True :
+            targetDirPath = ustr(QFileDialog.getExistingDirectory(self,
+                                                         '%s - Open Directory' % __appname__, defaultOpenDirPath,
+                                                         QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks))
+        else:
+            targetDirPath = ustr(defaultOpenDirPath)
 
-        targetDirPath = ustr(QFileDialog.getExistingDirectory(self,
-                                                     '%s - Open Directory' % __appname__, defaultOpenDirPath,
-                                                     QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks))
         self.importDirImages(targetDirPath)
 
     def importDirImages(self, dirpath):
