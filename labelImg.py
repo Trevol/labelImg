@@ -1164,7 +1164,7 @@ class MainWindow(QMainWindow, WindowMixin):
         if self.mayContinue():
             self.loadFile(filename)
 
-    def scanAllImages(self, folderPath):
+    def scanAllImages(self, folderPath, recursive=False):
         extensions = ['.%s' % fmt.data().decode("ascii").lower() for fmt in QImageReader.supportedImageFormats()]
         images = []
 
@@ -1174,6 +1174,8 @@ class MainWindow(QMainWindow, WindowMixin):
                     relativePath = os.path.join(root, file)
                     path = ustr(os.path.abspath(relativePath))
                     images.append(path)
+            if not recursive:
+                break
         natural_sort(images, key=lambda x: x.lower())
         return images
 
@@ -1238,7 +1240,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.dirname = dirpath
         self.filePath = None
         self.fileListWidget.clear()
-        self.mImgList = self.scanAllImages(dirpath)
+        self.mImgList = self.scanAllImages(dirpath, recursive=False)
         self.openNextImg()
         for imgPath in self.mImgList:
             item = QListWidgetItem(imgPath)
