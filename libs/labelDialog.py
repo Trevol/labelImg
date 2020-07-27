@@ -45,6 +45,7 @@ class LabelDialog(QDialog):
             layout.addWidget(self.listWidget)
 
         self.setLayout(layout)
+        self.setFixedHeight(300)
 
     def validate(self):
         try:
