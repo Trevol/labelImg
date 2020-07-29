@@ -10,5 +10,5 @@ docker run -it \
     --volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     --rm \
-    my_docker_img
+    labelimg_binary_builder
 

@@ -2,8 +2,12 @@
 ### Ubuntu use pyinstall v3.0
 THIS_SCRIPT_PATH=`readlink -f $0`
 THIS_SCRIPT_DIR=`dirname ${THIS_SCRIPT_PATH}`
-cd pyinstaller
-git checkout v3.6
+
+if [ ! -e "pyinstaller" ]; then
+    git clone https://github.com/pyinstaller/pyinstaller
+    cd pyinstaller
+    git checkout v3.6
+fi
 cd ${THIS_SCRIPT_DIR}
 
 rm -r build
@@ -22,4 +26,10 @@ rm -rf "$FOLDER"
 mkdir "$FOLDER"
 cp dist/labelImg $FOLDER
 cp -rf ../data $FOLDER/data
-zip "$FOLDER.zip" -r $FOLDER
+cp -f ../resources/icons/app.png $FOLDER
+cp -f ../resources/labelImg.desktop $FOLDER
+#zip "$FOLDER.zip" -r $FOLDER
+
+rm -r build
+rm -r dist
+rm labelImg.spec
