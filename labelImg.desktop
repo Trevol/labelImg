@@ -1,0 +1,10 @@
+#!/usr/bin/env xdg-open
+# https://averagelinuxuser.com/ubuntu_custom_launcher_dock/
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Exec=/home/trevol/Repos/labelImg/start_labelImg.sh
+Name=labelImg
+Comment=Annotate Images
+Icon=/home/trevol/Repos/labelImg/resources/icons/app.png
