@@ -95,7 +95,8 @@ class MainWindow(QMainWindow, WindowMixin):
         self.screencast = "https://youtu.be/p0nR2YsCY_U"
 
         # Load predefined classes to the list
-        self.loadPredefinedClasses(defaultPrefdefClassFile)
+        self.predefinedClassFile = defaultPrefdefClassFile
+        self.loadPredefinedClasses(self.predefinedClassFile)
 
         # Main widgets and related state.
         self.labelDialog = LabelDialog(parent=self, listItem=self.labelHist)
@@ -202,6 +203,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
         changeSavedir = action(getStr('changeSaveDir'), self.changeSavedirDialog,
                                'Ctrl+r', 'open', getStr('changeSavedAnnotationDir'))
+
+        openClasses = action("Open Classes", self.openClassesFile,
+                             '', 'open', 'Open classes file')
 
         openAnnotation = action(getStr('openAnnotation'), self.openAnnotationDialog,
                                 'Ctrl+Shift+O', 'open', getStr('openAnnotationDetail'))
@@ -366,7 +370,10 @@ class MainWindow(QMainWindow, WindowMixin):
         self.displayLabelOption.triggered.connect(self.togglePaintLabelsOption)
 
         addActions(self.menus.file,
-                   (open, opendir, changeSavedir, openAnnotation, self.menus.recentFiles, save, save_format, saveAs,
+                   (open, opendir,
+                    changeSavedir,
+                    openClasses,
+                    openAnnotation, self.menus.recentFiles, save, save_format, saveAs,
                     close, resetAll, quit))
         addActions(self.menus.help, (help, showInfo))
         addActions(self.menus.view, (
@@ -388,12 +395,13 @@ class MainWindow(QMainWindow, WindowMixin):
 
         self.tools = self.toolbar('Tools')
         self.actions.beginner = (
-            open, opendir, changeSavedir, openNextImg, openPrevImg, verify, save, save_format, None, create, copy,
+            open, opendir, changeSavedir, openClasses, openNextImg, openPrevImg, verify, save, save_format, None,
+            create, copy,
             delete, None,
             zoomIn, zoom, zoomOut, fitWindow, fitWidth)
 
         self.actions.advanced = (
-            open, opendir, changeSavedir, openNextImg, openPrevImg, save, save_format, None,
+            open, opendir, changeSavedir, openClasses, openNextImg, openPrevImg, save, save_format, None,
             createMode, editMode, None,
             hideAll, showAll)
 
@@ -1180,7 +1188,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
         if dirpath is not None and len(dirpath) > 1:
             self.defaultSaveDir = dirpath
-
+        if self.filePath is not None and len(self.filePath):
+            self.loadFile(self.filePath)  # reload current file
         self.statusBar().showMessage('%s . Annotation will be saved to %s' %
                                      ('Change saved folder', self.defaultSaveDir))
         self.statusBar().show()
@@ -1218,6 +1227,7 @@ class MainWindow(QMainWindow, WindowMixin):
         else:
             targetDirPath = ustr(defaultOpenDirPath)
 
+        self.defaultSaveDir = targetDirPath
         self.importDirImages(targetDirPath)
 
     def importDirImages(self, dirpath):
@@ -1314,7 +1324,22 @@ class MainWindow(QMainWindow, WindowMixin):
         if filename:
             if isinstance(filename, (tuple, list)):
                 filename = filename[0]
-            self.loadFile(filename)
+            if filename:
+                self.loadFile(filename)
+
+    def openClassesFile(self, _value=False):
+        if not self.mayContinue():
+            return
+        path = os.path.dirname(ustr(self.predefinedClassFile)) if self.predefinedClassFile else '.'
+
+        filters = 'Txt files (*.txt)'
+        filename = QFileDialog.getOpenFileName(self, f'{__appname__} - Choose txt file with classes', path, filters)
+        if filename:
+            if isinstance(filename, (tuple, list)):
+                filename = filename[0]
+            if filename:
+                self.predefinedClassFile = filename
+                self.loadPredefinedClasses(self.predefinedClassFile)
 
     def saveFile(self, _value=False):
         if self.defaultSaveDir is not None and len(ustr(self.defaultSaveDir)):
@@ -1434,12 +1459,10 @@ class MainWindow(QMainWindow, WindowMixin):
     def loadPredefinedClasses(self, predefClassesFile):
         if os.path.exists(predefClassesFile) is True:
             with codecs.open(predefClassesFile, 'r', 'utf8') as f:
+                self.labelHist.clear()
                 for line in f:
                     line = line.strip()
-                    if self.labelHist is None:
-                        self.labelHist = [line]
-                    else:
-                        self.labelHist.append(line)
+                    self.labelHist.append(line)
 
     def loadPascalXMLByFilename(self, xmlPath):
         if self.filePath is None:
