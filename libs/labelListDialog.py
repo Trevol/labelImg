@@ -18,7 +18,8 @@ class LabelListDialog(QDialog):
         if listItem is not None:
             for item in listItem:
                 self.listWidget.addItem(item)
-        self.listWidget.itemDoubleClicked.connect(self.listItemDoubleClick)
+        self.listWidget.itemClicked.connect(self.listItemClick)
+        # self.listWidget.itemDoubleClicked.connect(self.listItemDoubleClick)
         layout.addWidget(self.listWidget)
 
         self.setLayout(layout)
@@ -33,7 +34,7 @@ class LabelListDialog(QDialog):
             return self.label
         return None
 
-    def listItemDoubleClick(self, tQListWidgetItem):
+    def listItemClick(self, tQListWidgetItem):
         self.label = tQListWidgetItem.text().strip()
         if self.label:
             self.accept()
