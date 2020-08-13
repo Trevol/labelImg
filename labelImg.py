@@ -18,6 +18,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
 from combobox import ComboBox
+from libs.labelListDialog import LabelListDialog
 from libs.resources import *
 from libs.constants import *
 from libs.utils import *
@@ -877,14 +878,13 @@ class MainWindow(QMainWindow, WindowMixin):
         """
         if not self.useDefaultLabelCheckbox.isChecked() or not self.defaultLabelTextLine.text():
             if len(self.labelHist) > 0:
-                self.labelDialog = LabelDialog(
-                    parent=self, listItem=self.labelHist)
+                labelDialog = LabelListDialog(parent=self, listItem=self.labelHist)
 
             # Sync single class mode from PR#106
             if self.singleClassMode.isChecked() and self.lastLabel:
                 text = self.lastLabel
             else:
-                text = self.labelDialog.popUp(text=self.prevLabelText)
+                text = labelDialog.popUp()
                 self.lastLabel = text
         else:
             text = self.defaultLabelTextLine.text()

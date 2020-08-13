@@ -16,6 +16,8 @@ class LabelDialog(QDialog):
     def __init__(self, text="Enter object label", parent=None, listItem=None):
         super(LabelDialog, self).__init__(parent)
 
+        # self.setWindowFlags(Qt.Popup)
+
         self.edit = QLineEdit()
         self.edit.setText(text)
         self.edit.setValidator(labelValidator())
@@ -64,12 +66,16 @@ class LabelDialog(QDialog):
             self.edit.setText(self.edit.text())
 
     def popUp(self, text='', move=True):
+        cursorPos = QCursor.pos()
         self.edit.setText(text)
         self.edit.setSelection(0, len(text))
         self.edit.setFocus(Qt.PopupFocusReason)
         if move:
-            self.move(QCursor.pos())
-        return self.edit.text() if self.exec_() else None
+            self.move(cursorPos)
+        self.show()
+        if self.exec():
+            return self.edit.text()
+        return None
 
     def listItemClick(self, tQListWidgetItem):
         try:
