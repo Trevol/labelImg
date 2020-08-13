@@ -475,7 +475,7 @@ class Canvas(QWidget):
             p.drawRect(leftTop.x(), leftTop.y(), rectWidth, rectHeight)
 
         if self.drawing() and not self.prevPoint.isNull() and not self.outOfPixmap(self.prevPoint):
-            p.setPen(QColor(0, 0, 0))
+            p.setPen(QColor(0, 0, 255))
             p.drawLine(self.prevPoint.x(), 0, self.prevPoint.x(), self.pixmap.height())
             p.drawLine(0, self.prevPoint.y(), self.pixmap.width(), self.prevPoint.y())
 
