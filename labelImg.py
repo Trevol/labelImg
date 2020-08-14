@@ -189,7 +189,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.filedock.setFeatures(QDockWidget.DockWidgetFloatable)
 
         self.dockFeatures = QDockWidget.DockWidgetClosable | QDockWidget.DockWidgetFloatable
-        self.dock.setFeatures(self.dock.features() ^ self.dockFeatures)
+        self.dock.setFeatures(self.dock.features() | self.dockFeatures)
 
         # Actions
         action = partial(newAction, self)
@@ -527,9 +527,10 @@ class MainWindow(QMainWindow, WindowMixin):
         if value:
             self.actions.createMode.setEnabled(True)
             self.actions.editMode.setEnabled(False)
-            self.dock.setFeatures(self.dock.features() | self.dockFeatures)
+            # self.dock.setFeatures(self.dock.features() | self.dockFeatures)
         else:
-            self.dock.setFeatures(self.dock.features() ^ self.dockFeatures)
+            # self.dock.setFeatures(self.dock.features() ^ self.dockFeatures)
+            pass
 
     def populateModeActions(self):
         if self.beginner():
